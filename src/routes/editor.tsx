@@ -43,7 +43,7 @@ export const Route = createFileRoute("/editor")({
       },
     ],
   }),
-  component: Editor;
+  component: Editor,
 });
 
 const slides = [
