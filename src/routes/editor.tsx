@@ -133,7 +133,7 @@ function Editor() {
         <section className="flex min-w-0 flex-1 items-center justify-center overflow-auto p-6">
           <div className="w-full max-w-4xl">
             <div className="aspect-video overflow-hidden rounded-lg shadow-panel [container-type:inline-size]">
-              <SampleSlide title={slides[current]} />
+              <SampleSlide title={slides[current] ?? "Slide"} />
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
               Slide {current + 1} de {slides.length}
@@ -149,7 +149,7 @@ function Editor() {
           <div className="mt-4 space-y-4">
             <div>
               <Label htmlFor="titulo-slide">Título do slide</Label>
-              <Input id="titulo-slide" value={slides[current]} readOnly className="mt-2" />
+              <Input id="titulo-slide" value={slides[current] ?? ""} readOnly className="mt-2" />
             </div>
             <div>
               <Label htmlFor="layout">Layout</Label>
