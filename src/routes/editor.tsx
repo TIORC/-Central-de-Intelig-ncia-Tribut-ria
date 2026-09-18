@@ -155,7 +155,7 @@ function Editor() {
               <Label htmlFor="layout">Layout</Label>
               <Select defaultValue="indicadores">
                 <SelectTrigger id="layout" className="mt-2 w-full">
-                  <SelectValue />
+                  <SelectValue placeholder="Indicadores" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="capa">Capa</SelectItem>
