@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { PresentationStatus } from "@/data/mock";
+import type { PresentationStatus } from "@/types/library";
 
 const styles: Record<PresentationStatus, string> = {
   Finalizada: "bg-success/10 text-success",

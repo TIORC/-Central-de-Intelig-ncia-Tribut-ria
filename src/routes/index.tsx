@@ -6,7 +6,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { clients, documents, presentations, templates } from "@/data/mock";
+import { clients, documents, templates } from "@/data/mock";
+import { useLibrary } from "@/hooks/use-library";
+import { formatLibraryDate } from "@/types/library";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,6 +30,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
+  const items = useLibrary();
+  const pendentes = items.filter((item) => item.status !== "Finalizada").length;
+
   return (
     <AppLayout>
       <PageHeader
@@ -46,8 +51,12 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Apresentações"
-          value={presentations.length}
-          hint="2 aguardando revisão"
+          value={items.length}
+          hint={
+            pendentes === 0
+              ? "Nenhuma pendente de revisão"
+              : `${pendentes} aguardando revisão`
+          }
           icon={Presentation}
         />
         <StatCard
@@ -78,7 +87,13 @@ function Dashboard() {
           </Button>
         </div>
         <ul className="divide-y divide-border">
-          {presentations.slice(0, 5).map((item) => (
+          {items.length === 0 && (
+            <li className="px-5 py-6 text-sm text-muted-foreground">
+              Nenhuma apresentação criada ainda. Importe um arquivo em “Nova apresentação” para
+              começar.
+            </li>
+          )}
+          {items.slice(0, 5).map((item) => (
             <li
               key={item.id}
               className="flex flex-wrap items-center gap-3 px-5 py-4 transition-colors hover:bg-muted/50"
@@ -87,13 +102,18 @@ function Dashboard() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.client} · {item.type}
+                  {item.client} · {item.type} · {item.slideCount}{" "}
+                  {item.slideCount === 1 ? "slide" : "slides"}
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground">{item.date}</span>
+              <span className="text-xs text-muted-foreground">
+                {formatLibraryDate(item.dateISO)}
+              </span>
               <StatusBadge status={item.status} />
               <Button asChild variant="outline" size="sm">
-                <Link to="/editor">Abrir</Link>
+                <Link to="/editor" search={{ id: item.id }}>
+                  Abrir
+                </Link>
               </Button>
             </li>
           ))}

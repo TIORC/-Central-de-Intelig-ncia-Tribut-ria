@@ -1,13 +1,5 @@
-export type PresentationStatus = "Rascunho" | "Em revisão" | "Finalizada";
-
-export type Presentation = {
-  id: string;
-  name: string;
-  client: string;
-  date: string;
-  status: PresentationStatus;
-  type: string;
-};
+export type { PresentationStatus } from "@/types/library";
+export { PRESENTATION_STATUSES } from "@/types/library";
 
 export type Client = {
   id: string;
@@ -32,57 +24,6 @@ export type Template = {
   description: string;
   slides: number;
 };
-
-export const presentations: Presentation[] = [
-  {
-    id: "1",
-    name: "Diagnóstico Tributário 2026",
-    client: "Alpha Indústria",
-    date: "12/09/2026",
-    status: "Finalizada",
-    type: "Diagnóstico",
-  },
-  {
-    id: "2",
-    name: "Recuperação de Créditos PIS/COFINS",
-    client: "Norte Distribuidora",
-    date: "08/09/2026",
-    status: "Em revisão",
-    type: "Oportunidades",
-  },
-  {
-    id: "3",
-    name: "Planejamento Fiscal Semestral",
-    client: "Construtora Vértice",
-    date: "02/09/2026",
-    status: "Rascunho",
-    type: "Planejamento",
-  },
-  {
-    id: "4",
-    name: "Panorama Reforma Tributária",
-    client: "Grupo Meridiano",
-    date: "28/08/2026",
-    status: "Finalizada",
-    type: "Institucional",
-  },
-  {
-    id: "5",
-    name: "Revisão de Enquadramento",
-    client: "Clínica Bem Viver",
-    date: "21/08/2026",
-    status: "Em revisão",
-    type: "Diagnóstico",
-  },
-  {
-    id: "6",
-    name: "Resultado Consolidado Q2",
-    client: "Alpha Indústria",
-    date: "15/08/2026",
-    status: "Finalizada",
-    type: "Financeiro",
-  },
-];
 
 export const clients: Client[] = [
   {
