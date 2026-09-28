@@ -18,6 +18,7 @@ import { Route as EditorRouteImport } from './routes/editor'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NovaApresentacaoRouteImport } from './routes/nova-apresentacao'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as ApiPublicTmpCreateUserRouteImport } from './routes/api/public/tmp-create-user'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,11 @@ const TemplatesRoute = TemplatesRouteImport.update({
   path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTmpCreateUserRoute = ApiPublicTmpCreateUserRouteImport.update({
+  id: '/api/public/tmp-create-user',
+  path: '/api/public/tmp-create-user',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
+  '/api/public/tmp-create-user': typeof ApiPublicTmpCreateUserRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
+  '/api/public/tmp-create-user': typeof ApiPublicTmpCreateUserRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
+  '/api/public/tmp-create-user': typeof ApiPublicTmpCreateUserRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nova-apresentacao'
     | '/templates'
+    | '/api/public/tmp-create-user'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nova-apresentacao'
     | '/templates'
+    | '/api/public/tmp-create-user'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nova-apresentacao'
     | '/templates'
+    | '/api/public/tmp-create-user'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NovaApresentacaoRoute: typeof NovaApresentacaoRoute
   TemplatesRoute: typeof TemplatesRoute
+  ApiPublicTmpCreateUserRoute: typeof ApiPublicTmpCreateUserRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/tmp-create-user': {
+      id: '/api/public/tmp-create-user'
+      path: '/api/public/tmp-create-user'
+      fullPath: '/api/public/tmp-create-user'
+      preLoaderRoute: typeof ApiPublicTmpCreateUserRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NovaApresentacaoRoute: NovaApresentacaoRoute,
   TemplatesRoute: TemplatesRoute,
+  ApiPublicTmpCreateUserRoute: ApiPublicTmpCreateUserRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
