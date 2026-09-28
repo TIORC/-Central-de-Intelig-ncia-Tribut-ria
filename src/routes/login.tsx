@@ -36,6 +36,11 @@ function LoginPage() {
 
     setBusy(false);
     if (signInError) {
+      console.error("Supabase sign-in failed", {
+        code: signInError.code,
+        status: signInError.status,
+        message: signInError.message,
+      });
       setError("E-mail ou senha inválidos. Confira seus dados e tente novamente.");
       return;
     }
