@@ -74,7 +74,7 @@ export function useUpdateClient() {
       const uploadedLogoUrl = logoFile ? await uploadClientLogo(logoFile) : null;
       const logoUrl = removeLogo ? null : (uploadedLogoUrl ?? input.logoUrl ?? null);
 
-      const updated = await updateClientRecord(id, { ...input, logoUrl });
+      const updated = await updateClientRecord(id, { ...input, logoUrl: logoUrl ?? "" });
 
       if (previousLogoUrl && previousLogoUrl !== logoUrl) {
         await removeClientLogo(previousLogoUrl).catch(() => undefined);
