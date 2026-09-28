@@ -18,7 +18,7 @@ type EditorSearch = { id?: string };
 
 export const Route = createFileRoute("/editor")({
   validateSearch: (search: Record<string, unknown>): EditorSearch =>
-    typeof search.id === "string" && search.id.length > 0 ? { id: search.id } : {},
+    typeof search["id"] === "string" && search["id"].length > 0 ? { id: search["id"] } : {},
   head: () => ({
     meta: [
       { title: "Editor de apresentação — Central de Inteligência Tributária" },
