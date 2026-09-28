@@ -4,8 +4,6 @@ import {
   PlusCircle,
   Presentation,
   Users,
-  FolderOpen,
-  LayoutTemplate,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
@@ -24,8 +22,6 @@ const navItems = [
   { label: "Nova apresentação", to: "/nova-apresentacao", icon: PlusCircle },
   { label: "Apresentações", to: "/apresentacoes", icon: Presentation },
   { label: "Clientes", to: "/clientes", icon: Users },
-  { label: "Documentos", to: "/documentos", icon: FolderOpen },
-  { label: "Templates", to: "/templates", icon: LayoutTemplate },
   { label: "Configurações", to: "/configuracoes", icon: Settings },
 ] as const;
 

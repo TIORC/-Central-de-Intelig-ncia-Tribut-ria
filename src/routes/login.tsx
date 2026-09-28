@@ -26,26 +26,52 @@ function LoginPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setBusy(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    setBusy(false);
-    if (signInError) {
-      console.error("Supabase sign-in failed", {
-        code: signInError.code,
-        status: signInError.status,
-        message: signInError.message,
-      });
-      setError("E-mail ou senha inválidos. Confira seus dados e tente novamente.");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError("Digite um endereço de e-mail válido.");
+      return;
+    }
+    if (password.length === 0) {
+      setError("Digite sua senha.");
       return;
     }
 
-    await navigate({ to: "/", replace: true });
+    setBusy(true);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
+      if (signInError) {
+        console.error("Supabase sign-in failed", {
+          code: signInError.code,
+          status: signInError.status,
+          message: signInError.message,
+        });
+        const authMessage = signInError.message.toLowerCase();
+        if (signInError.code === "email_not_confirmed" || authMessage.includes("email not confirmed")) {
+          setError("Este e-mail ainda não foi confirmado no Supabase Auth.");
+        } else if (authMessage.includes("api key")) {
+          setError("O Supabase recusou a chave da aplicação. Confira a configuração do projeto no Lovable Cloud.");
+        } else {
+          setError("E-mail ou senha inválidos. Confira seus dados e tente novamente.");
+        }
+        return;
+      }
+
+      await navigate({ to: "/", replace: true });
+    } catch (cause: unknown) {
+      const details = cause instanceof Error ? cause.message : String(cause);
+      const status =
+        typeof cause === "object" && cause !== null && "status" in cause ? cause.status : undefined;
+      console.error("Unexpected Supabase sign-in failure", { status, message: details });
+      setError("Não foi possível concluir o login. Confira a conexão e tente novamente.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

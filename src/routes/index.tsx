@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FolderOpen, LayoutTemplate, Plus, Presentation, Users } from "lucide-react";
+import { Plus, Presentation, Users } from "lucide-react";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { documents, templates } from "@/data/mock";
 import { useClients } from "@/hooks/use-clients";
 import { useLibrary } from "@/hooks/use-library";
 import { formatLibraryDate } from "@/types/library";
@@ -18,12 +17,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Painel central para apresentações tributárias, clientes, documentos e templates corporativos.",
+          "Painel central para apresentações tributárias e clientes.",
       },
       { property: "og:title", content: "Dashboard — Central de Planejamento Tributário" },
       {
         property: "og:description",
-        content: "Painel central para apresentações tributárias, clientes e documentos.",
+        content: "Painel central para apresentações tributárias e clientes.",
       },
     ],
   }),
@@ -39,7 +38,7 @@ function Dashboard() {
     <AppLayout>
       <PageHeader
         title="Dashboard"
-        description="Visão geral das apresentações, clientes e materiais da consultoria."
+        description="Visão geral das apresentações e clientes da consultoria."
         action={
           <Button asChild size="lg">
             <Link to="/nova-apresentacao">
@@ -50,7 +49,7 @@ function Dashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <StatCard
           label="Apresentações"
           value={items.length}
@@ -58,18 +57,6 @@ function Dashboard() {
           icon={Presentation}
         />
         <StatCard label="Clientes" value={clients.length} hint="Carteira ativa" icon={Users} />
-        <StatCard
-          label="Documentos"
-          value={documents.length}
-          hint="Arquivos vinculados"
-          icon={FolderOpen}
-        />
-        <StatCard
-          label="Templates"
-          value={templates.length}
-          hint="Modelos disponíveis"
-          icon={LayoutTemplate}
-        />
       </div>
 
       <section className="surface-card mt-8 overflow-hidden">
