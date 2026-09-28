@@ -11,12 +11,12 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
     meta: [
-      { title: "Configurações — Central de Inteligência Tributária" },
+      { title: "Configurações — Central de Planejamento Tributário" },
       {
         name: "description",
         content: "Dados da consultoria, identidade visual padrão e preferências do sistema.",
       },
-      { property: "og:title", content: "Configurações — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Configurações — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Dados da consultoria e preferências do sistema.",
@@ -36,7 +36,7 @@ function Settings() {
         <div className="mt-5 grid gap-5 md:grid-cols-2">
           <div>
             <Label htmlFor="empresa">Nome</Label>
-            <Input id="empresa" defaultValue="Central de Inteligência Tributária" className="mt-2" />
+            <Input id="empresa" defaultValue="Central de Planejamento Tributário" className="mt-2" />
           </div>
           <div>
             <Label htmlFor="email">E-mail de contato</Label>

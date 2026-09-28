@@ -1,11 +1,20 @@
 export const SLIDE_WIDTH = 1280;
 export const SLIDE_HEIGHT = 720;
 
-export type ElementType = "text" | "card" | "stat" | "image" | "shape";
+export type ElementType = "text" | "card" | "stat" | "image" | "shape" | "chart" | "chartCard";
 
 export type ElementAlign = "left" | "center" | "right";
 export type ElementFontWeight = 400 | 500 | 600 | 700;
 export type ShapeKind = "bar" | "line" | "circle" | "rect" | "pill";
+export type ChartKind = "bar" | "column" | "line" | "area" | "pie" | "donut";
+
+/** Uma série do gráfico: uma cor, um nome e um valor por categoria. */
+export type ChartSeries = {
+  id: string;
+  name: string;
+  color: string;
+  values: number[];
+};
 
 type ElementBase = {
   id: string;
@@ -69,8 +78,63 @@ export type ShapeElement = ElementBase & {
   color: string;
 };
 
-export type SlideElement = TextElement | CardElement | StatElement | ImageElement | ShapeElement;
+export type ChartElement = ElementBase & {
+  type: "chart";
+  chartKind: ChartKind;
+  title: string;
+  /** Título vertical do eixo Y (padrão: "Valor (R$)"). */
+  yAxisTitle?: string;
+  categories: string[];
+  series: ChartSeries[];
+  showLegend: boolean;
+  showValues: boolean;
+  showGrid: boolean;
+  textSize: number;
+  textColor: string;
+  background: string;
+  radius: number;
+  padding: number;
+};
 
+/** Linha do cartão lateral: rótulo, valor e observação opcional. */
+export type ChartCardItem = {
+  id: string;
+  label: string;
+  value: string;
+  note?: string;
+  /** Cor de destaque opcional para o valor deste indicador. */
+  color?: string;
+  /** Destaque (total) — valor maior e separador acima. */
+  emphasis?: boolean;
+};
+
+/** Cartão lateral de indicadores que acompanha o gráfico. */
+export type ChartCardElement = ElementBase & {
+  type: "chartCard";
+  /** "list": rótulo esquerda / valor direita. "kpi": grade de indicadores. */
+  variant: "list" | "kpi";
+  title: string;
+  items: ChartCardItem[];
+  background: string;
+  radius: number;
+  padding: number;
+  titleSize: number;
+  labelSize: number;
+  valueSize: number;
+  totalSize: number;
+  titleColor: string;
+  labelColor: string;
+  valueColor: string;
+};
+
+export type SlideElement =
+  | TextElement
+  | CardElement
+  | StatElement
+  | ImageElement
+  | ShapeElement
+  | ChartElement
+  | ChartCardElement;
 export type SlideBackground =
   { type: "solid"; color: string } | { type: "gradient"; from: string; to: string; angle: number };
 

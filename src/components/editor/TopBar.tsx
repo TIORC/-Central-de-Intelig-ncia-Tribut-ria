@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Loader2, Play, Plus, Redo2, Save, Trash2, Undo2 } from "lucide-react";
+import {
+  AlignCenter,
+  ArrowLeft,
+  Download,
+  Loader2,
+  Play,
+  Plus,
+  Redo2,
+  Save,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 
 import type { EditorApi } from "@/hooks/use-presentation";
 import { Button } from "@/components/ui/button";
@@ -36,6 +47,32 @@ const ZOOM_OPTIONS: { label: string; value: string }[] = [
   { label: "200%", value: "200" },
 ];
 
+function CenterTextButton({ api }: { api: EditorApi }) {
+  const { selectedElementId, currentSlide } = api;
+  const element = currentSlide.elements.find((el) => el.id === selectedElementId);
+
+  const centerText = () => {
+    if (!selectedElementId) return;
+    if (element?.type === "text") {
+      api.updateElement(selectedElementId, { align: "center" }, true);
+    }
+  };
+
+  const isTextElementSelected = selectedElementId && element?.type === "text";
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      title="Centralizar texto (Ctrl+Alt+C)"
+      disabled={!isTextElementSelected}
+      onClick={centerText}
+    >
+      <AlignCenter className="size-4" />
+    </Button>
+  );
+}
+
 function NameEditor({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
@@ -56,6 +93,24 @@ function NameEditor({ value, onCommit }: { value: string; onCommit: (v: string) 
   );
 }
 
+function useCenterTextShortcut(api: EditorApi) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        const { selectedElementId, currentSlide } = api;
+        const element = currentSlide.elements.find((el) => el.id === selectedElementId);
+        if (selectedElementId && element?.type === "text") {
+          api.updateElement(selectedElementId, { align: "center" }, true);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [api]);
+}
+
 export function TopBar({
   api,
   zoom,
@@ -65,6 +120,8 @@ export function TopBar({
   onExport,
   exporting = false,
 }: TopBarProps) {
+  useCenterTextShortcut(api);
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3">
       <Button asChild variant="ghost" size="sm">
@@ -77,6 +134,10 @@ export function TopBar({
       <Separator orientation="vertical" className="h-6" />
 
       <NameEditor value={api.presentation.name} onCommit={api.renamePresentation} />
+
+      <Separator orientation="vertical" className="h-6" />
+
+      <CenterTextButton api={api} />
 
       <div className="ml-auto flex items-center gap-1.5">
         <Button

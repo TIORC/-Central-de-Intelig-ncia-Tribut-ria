@@ -5,10 +5,19 @@ import {
   AlignRight,
   ArrowDownToLine,
   ArrowUpToLine,
+  PanelRight,
   Trash2,
 } from "lucide-react";
 
-import { PALETTE } from "@/data/slide-templates";
+import {
+  CHART_KIND_LABELS,
+  makeChartCard,
+  PALETTE,
+  PRIMARY_CHART_KINDS,
+} from "@/data/slide-templates";
+import { ChartCardItemsEditor } from "@/components/editor/ChartCardItemsEditor";
+import { ChartDataEditor } from "@/components/editor/ChartDataEditor";
+import { DEFAULT_CHART_THEME } from "@/lib/chart-theme";
 import type { EditorApi } from "@/hooks/use-presentation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +30,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type {
+  ChartKind,
   ElementAlign,
   ElementFontWeight,
   ShapeKind,
@@ -48,10 +59,12 @@ function DraftInput({
   value,
   onCommit,
   multiline = false,
+  placeholder,
 }: {
   value: string;
   onCommit: (v: string) => void;
   multiline?: boolean;
+  placeholder?: string;
 }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
@@ -60,6 +73,7 @@ function DraftInput({
   };
   const shared = {
     value: draft,
+    placeholder,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setDraft(e.target.value),
     onBlur: commit,
@@ -214,6 +228,30 @@ function AlignField({
   );
 }
 
+function SwitchField({
+  label,
+  checked,
+  onCommit,
+}: {
+  label: string;
+  checked: boolean;
+  onCommit: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Switch checked={checked} onCheckedChange={onCommit} />
+    </div>
+  );
+}
+
+/** Tipos oferecidos na edição: os dois principais + o tipo legado em uso. */
+function chartKindOptions(current: ChartKind): { value: ChartKind; label: string }[] {
+  const kinds: ChartKind[] = [...PRIMARY_CHART_KINDS];
+  if (!kinds.includes(current)) kinds.push(current);
+  return kinds.map((kind) => ({ value: kind, label: CHART_KIND_LABELS[kind] }));
+}
+
 function SelectField<T extends string | number>({
   label,
   value,
@@ -251,6 +289,23 @@ export function InspectorPanel({ api }: InspectorPanelProps) {
 
   const patch = (p: Partial<SlideElement>) => {
     if (element) api.updateElement(element.id, p, true);
+  };
+
+  /**
+   * Cria o painel de indicadores ao lado do gráfico selecionado, já no estilo
+   * padrão do tema, e deixa o novo elemento selecionado.
+   */
+  const insertSideCard = (chart: Extract<SlideElement, { type: "chart" }>) => {
+    const gap = DEFAULT_CHART_THEME.layout.gap;
+    const width = 356;
+    const card = makeChartCard({
+      x: Math.min(chart.x + chart.w + gap, SLIDE_WIDTH - width - 24),
+      y: chart.y,
+      w: width,
+      h: chart.h,
+    });
+    api.addElement(card);
+    api.selectElement(card.id);
   };
 
   if (!element) {
@@ -598,6 +653,205 @@ export function InspectorPanel({ api }: InspectorPanelProps) {
         </>
       )}
 
+      {element.type === "chart" && (
+        <>
+          <Section title="Gráfico">
+            <div>
+              <Label className="text-xs text-muted-foreground">Título</Label>
+              <DraftInput
+                value={element.title}
+                onCommit={(v) => patch({ title: v })}
+                placeholder="Título do gráfico"
+              />
+            </div>
+            <SelectField<ChartKind>
+              label="Tipo"
+              value={element.chartKind}
+              options={chartKindOptions(element.chartKind)}
+              onCommit={(v) => patch({ chartKind: v })}
+            />
+            <div>
+              <Label className="text-xs text-muted-foreground">Título do eixo Y</Label>
+              <DraftInput
+                value={element.yAxisTitle ?? DEFAULT_CHART_THEME.axes.y.title}
+                onCommit={(v) => patch({ yAxisTitle: v })}
+                placeholder={DEFAULT_CHART_THEME.axes.y.title}
+              />
+            </div>
+            <div className="space-y-2 pt-1">
+              <SwitchField
+                label="Mostrar legenda"
+                checked={element.showLegend}
+                onCommit={(v) => patch({ showLegend: v })}
+              />
+              <SwitchField
+                label="Rótulos de valor"
+                checked={element.showValues}
+                onCommit={(v) => patch({ showValues: v })}
+              />
+              <SwitchField
+                label="Linhas de grade (horizontais)"
+                checked={element.showGrid}
+                onCommit={(v) => patch({ showGrid: v })}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => insertSideCard(element)}
+            >
+              <PanelRight className="size-4" />
+              Inserir painel de indicadores ao lado
+            </Button>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              O estilo padrão do tema é aplicado na criação do gráfico. Cores e tamanhos alterados
+              aqui são mantidos.
+            </p>
+          </Section>
+
+          <Section title="Dados">
+            <ChartDataEditor element={element} onPatch={patch} />
+          </Section>
+
+          <Section title="Aparência">
+            <div className="grid grid-cols-2 gap-3">
+              <NumberField
+                label="Texto (px)"
+                value={element.textSize}
+                min={8}
+                max={64}
+                onCommit={(v) => patch({ textSize: v })}
+              />
+              <NumberField
+                label="Borda (px)"
+                value={element.radius}
+                min={0}
+                max={200}
+                onCommit={(v) => patch({ radius: v })}
+              />
+              <div className="col-span-2">
+                <NumberField
+                  label="Padding"
+                  value={element.padding}
+                  min={0}
+                  max={200}
+                  onCommit={(v) => patch({ padding: v })}
+                />
+              </div>
+            </div>
+            <ColorField
+              label="Cor do texto"
+              value={element.textColor}
+              onCommit={(v) => patch({ textColor: v })}
+            />
+            <ColorField
+              label="Fundo"
+              value={element.background}
+              onCommit={(v) => patch({ background: v })}
+            />
+          </Section>
+        </>
+      )}
+
+      {element.type === "chartCard" && (
+        <>
+          <Section title="Painel de indicadores">
+            <div>
+              <Label className="text-xs text-muted-foreground">Título</Label>
+              <DraftInput
+                value={element.title}
+                onCommit={(v) => patch({ title: v })}
+                placeholder="Título do painel"
+              />
+            </div>
+            <SelectField<"list" | "kpi">
+              label="Formato"
+              value={element.variant}
+              options={[
+                { value: "list", label: "Lista (rótulo + valor)" },
+                { value: "kpi", label: "KPIs (valor + legenda)" },
+              ]}
+              onCommit={(v) => patch({ variant: v })}
+            />
+          </Section>
+
+          <Section title="Indicadores">
+            <ChartCardItemsEditor element={element} onPatch={patch} />
+          </Section>
+
+          <Section title="Aparência">
+            <div className="grid grid-cols-2 gap-3">
+              <NumberField
+                label="Título (px)"
+                value={element.titleSize}
+                min={8}
+                max={64}
+                onCommit={(v) => patch({ titleSize: v })}
+              />
+              <NumberField
+                label="Rótulo (px)"
+                value={element.labelSize}
+                min={8}
+                max={64}
+                onCommit={(v) => patch({ labelSize: v })}
+              />
+              <NumberField
+                label="Valor (px)"
+                value={element.valueSize}
+                min={8}
+                max={64}
+                onCommit={(v) => patch({ valueSize: v })}
+              />
+              <NumberField
+                label="Total (px)"
+                value={element.totalSize}
+                min={8}
+                max={96}
+                onCommit={(v) => patch({ totalSize: v })}
+              />
+              <NumberField
+                label="Cantos (px)"
+                value={element.radius}
+                min={0}
+                max={200}
+                onCommit={(v) => patch({ radius: v })}
+              />
+              <NumberField
+                label="Padding"
+                value={element.padding}
+                min={0}
+                max={200}
+                onCommit={(v) => patch({ padding: v })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <ColorField
+                label="Cor do título"
+                value={element.titleColor}
+                onCommit={(v) => patch({ titleColor: v })}
+              />
+              <ColorField
+                label="Cor do rótulo"
+                value={element.labelColor}
+                onCommit={(v) => patch({ labelColor: v })}
+              />
+            </div>
+            <ColorField
+              label="Cor do valor"
+              value={element.valueColor}
+              onCommit={(v) => patch({ valueColor: v })}
+            />
+            <ColorField
+              label="Fundo"
+              value={element.background}
+              onCommit={(v) => patch({ background: v })}
+            />
+          </Section>
+        </>
+      )}
+
       {element.type === "shape" && (
         <Section title="Forma">
           <SelectField<ShapeKind>
@@ -707,4 +961,6 @@ const ELEMENT_LABELS: Record<SlideElement["type"], string> = {
   stat: "Indicador",
   image: "Imagem",
   shape: "Forma",
+  chart: "Gráfico",
+  chartCard: "Painel de indicadores",
 };

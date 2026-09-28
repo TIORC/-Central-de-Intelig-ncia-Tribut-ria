@@ -6,20 +6,21 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { clients, documents, templates } from "@/data/mock";
+import { documents, templates } from "@/data/mock";
+import { useClients } from "@/hooks/use-clients";
 import { useLibrary } from "@/hooks/use-library";
 import { formatLibraryDate } from "@/types/library";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Central de Inteligência Tributária" },
+      { title: "Dashboard — Central de Planejamento Tributário" },
       {
         name: "description",
         content:
           "Painel central para apresentações tributárias, clientes, documentos e templates corporativos.",
       },
-      { property: "og:title", content: "Dashboard — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Dashboard — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Painel central para apresentações tributárias, clientes e documentos.",
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const items = useLibrary();
+  const { data: clients = [] } = useClients();
   const pendentes = items.filter((item) => item.status !== "Finalizada").length;
 
   return (
@@ -52,19 +54,10 @@ function Dashboard() {
         <StatCard
           label="Apresentações"
           value={items.length}
-          hint={
-            pendentes === 0
-              ? "Nenhuma pendente de revisão"
-              : `${pendentes} aguardando revisão`
-          }
+          hint={pendentes === 0 ? "Nenhuma pendente de revisão" : `${pendentes} aguardando revisão`}
           icon={Presentation}
         />
-        <StatCard
-          label="Clientes"
-          value={clients.length}
-          hint="Carteira ativa"
-          icon={Users}
-        />
+        <StatCard label="Clientes" value={clients.length} hint="Carteira ativa" icon={Users} />
         <StatCard
           label="Documentos"
           value={documents.length}

@@ -9,12 +9,12 @@ import { templates } from "@/data/mock";
 export const Route = createFileRoute("/templates")({
   head: () => ({
     meta: [
-      { title: "Templates — Central de Inteligência Tributária" },
+      { title: "Templates — Central de Planejamento Tributário" },
       {
         name: "description",
         content: "Modelos de apresentação padronizados para diagnósticos e planejamentos fiscais.",
       },
-      { property: "og:title", content: "Templates — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Templates — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Modelos padronizados de apresentação tributária.",

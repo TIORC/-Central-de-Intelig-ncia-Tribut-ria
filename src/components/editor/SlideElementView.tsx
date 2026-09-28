@@ -1,22 +1,16 @@
 import { Image as ImageIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
+import { ChartCardElementView } from "@/components/editor/ChartCardElementView";
+import { ChartElementView } from "@/components/editor/ChartElementView";
 import { EditableText } from "@/components/editor/EditableText";
 import type { EditTarget, ElementTextField, SlideElement } from "@/types/presentation";
 import { cn } from "@/lib/utils";
 
 type SlideViewApi = {
-  startEdit?: (target: EditTarget) => void;
   commitEdit?: (text: string) => void;
   cancelEdit?: () => void;
 };
-
-export function getDefaultEditTarget(el: SlideElement): EditTarget | null {
-  if (el.type === "text") return { id: el.id, field: "text" };
-  if (el.type === "card") return { id: el.id, field: "title" };
-  if (el.type === "stat") return { id: el.id, field: "value" };
-  return null;
-}
 
 type SlideElementViewProps = {
   el: SlideElement;
@@ -32,8 +26,6 @@ function isField(target: EditTarget | null, id: string, field: ElementTextField)
 const noop = () => {};
 
 export function SlideElementView({ el, editing, api, interactive = true }: SlideElementViewProps) {
-  const start = (field: ElementTextField) => api?.startEdit?.({ id: el.id, field });
-
   switch (el.type) {
     case "text": {
       const style: CSSProperties = {
@@ -46,7 +38,7 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
         overflowWrap: "break-word",
       };
       return (
-        <div className="h-full w-full" style={style}>
+        <div className="h-full w-full" data-field="text" style={style}>
           {isField(editing, el.id, "text") ? (
             <EditableText
               value={el.text}
@@ -54,7 +46,7 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
               onCancel={api?.cancelEdit ?? noop}
             />
           ) : (
-            <p onDoubleClick={() => start("text")} className="h-full w-full cursor-text">
+            <p className="h-full w-full cursor-text">
               {el.text ||
                 (interactive ? <span className="opacity-40">Digite um texto…</span> : null)}
             </p>
@@ -71,7 +63,8 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
         >
           <div className="h-full w-full space-y-[6px]" style={{ padding: el.padding }}>
             <div
-              className="min-h-[1em]"
+              className="min-h-[1em] cursor-text"
+              data-field="title"
               style={{ fontSize: el.titleSize, color: el.titleColor, fontWeight: 700 }}
             >
               {isField(editing, el.id, "title") ? (
@@ -82,13 +75,14 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
                   onCancel={api?.cancelEdit ?? noop}
                 />
               ) : (
-                <p onDoubleClick={() => start("title")} className="cursor-text">
+                <p>
                   {el.title || (interactive ? <span className="opacity-40">Título</span> : null)}
                 </p>
               )}
             </div>
             <div
-              className="min-h-[1em] flex-1"
+              className="min-h-[1em] flex-1 cursor-text"
+              data-field="body"
               style={{ fontSize: el.bodySize, color: el.bodyColor }}
             >
               {isField(editing, el.id, "body") ? (
@@ -98,12 +92,7 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
                   onCancel={api?.cancelEdit ?? noop}
                 />
               ) : (
-                <p
-                  onDoubleClick={() => start("body")}
-                  className="cursor-text whitespace-pre-wrap break-words"
-                >
-                  {el.body}
-                </p>
+                <p className="whitespace-pre-wrap break-words">{el.body}</p>
               )}
             </div>
           </div>
@@ -117,7 +106,11 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
           className="flex h-full w-full flex-col justify-center overflow-hidden"
           style={{ background: el.background, borderRadius: el.radius, padding: el.padding }}
         >
-          <div style={{ fontSize: el.valueSize, color: el.valueColor, fontWeight: 700 }}>
+          <div
+            className="cursor-text"
+            data-field="value"
+            style={{ fontSize: el.valueSize, color: el.valueColor, fontWeight: 700 }}
+          >
             {isField(editing, el.id, "value") ? (
               <EditableText
                 value={el.value}
@@ -126,12 +119,16 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
                 onCancel={api?.cancelEdit ?? noop}
               />
             ) : (
-              <p onDoubleClick={() => start("value")} className="cursor-text truncate">
+              <p className="truncate">
                 {el.value || (interactive ? <span className="opacity-40">Valor</span> : null)}
               </p>
             )}
           </div>
-          <div className="mt-[8px]" style={{ fontSize: el.labelSize, color: el.labelColor }}>
+          <div
+            className="mt-[8px] cursor-text"
+            data-field="label"
+            style={{ fontSize: el.labelSize, color: el.labelColor }}
+          >
             {isField(editing, el.id, "label") ? (
               <EditableText
                 value={el.label}
@@ -140,9 +137,7 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
                 onCancel={api?.cancelEdit ?? noop}
               />
             ) : (
-              <p onDoubleClick={() => start("label")} className="cursor-text">
-                {el.label}
-              </p>
+              <p>{el.label}</p>
             )}
           </div>
         </div>
@@ -168,6 +163,14 @@ export function SlideElementView({ el, editing, api, interactive = true }: Slide
           )}
         </div>
       );
+    }
+
+    case "chart": {
+      return <ChartElementView el={el} editing={editing} api={api} interactive={interactive} />;
+    }
+
+    case "chartCard": {
+      return <ChartCardElementView el={el} editing={editing} api={api} interactive={interactive} />;
     }
 
     case "shape": {

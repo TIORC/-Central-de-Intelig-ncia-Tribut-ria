@@ -15,6 +15,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EditorRouteImport } from './routes/editor'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as NovaApresentacaoRouteImport } from './routes/nova-apresentacao'
 import { Route as TemplatesRouteImport } from './routes/templates'
 
@@ -48,6 +49,11 @@ const EditorRoute = EditorRouteImport.update({
   path: '/editor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovaApresentacaoRoute = NovaApresentacaoRouteImport.update({
   id: '/nova-apresentacao',
   path: '/nova-apresentacao',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRoute
   '/documentos': typeof DocumentosRoute
   '/editor': typeof EditorRoute
+  '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/documentos': typeof DocumentosRoute
   '/editor': typeof EditorRoute
+  '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/documentos': typeof DocumentosRoute
   '/editor': typeof EditorRoute
+  '/login': typeof LoginRoute
   '/nova-apresentacao': typeof NovaApresentacaoRoute
   '/templates': typeof TemplatesRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/documentos'
     | '/editor'
+    | '/login'
     | '/nova-apresentacao'
     | '/templates'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/documentos'
     | '/editor'
+    | '/login'
     | '/nova-apresentacao'
     | '/templates'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/documentos'
     | '/editor'
+    | '/login'
     | '/nova-apresentacao'
     | '/templates'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   DocumentosRoute: typeof DocumentosRoute
   EditorRoute: typeof EditorRoute
+  LoginRoute: typeof LoginRoute
   NovaApresentacaoRoute: typeof NovaApresentacaoRoute
   TemplatesRoute: typeof TemplatesRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nova-apresentacao': {
       id: '/nova-apresentacao'
       path: '/nova-apresentacao'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRoute,
   DocumentosRoute: DocumentosRoute,
   EditorRoute: EditorRoute,
+  LoginRoute: LoginRoute,
   NovaApresentacaoRoute: NovaApresentacaoRoute,
   TemplatesRoute: TemplatesRoute,
 }

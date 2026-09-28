@@ -21,7 +21,7 @@ export const Route = createFileRoute("/editor")({
     typeof search["id"] === "string" && search["id"].length > 0 ? { id: search["id"] } : {},
   head: () => ({
     meta: [
-      { title: "Editor de apresentação — Central de Inteligência Tributária" },
+      { title: "Editor de apresentação — Central de Planejamento Tributário" },
       {
         name: "description",
         content:
@@ -91,8 +91,10 @@ function Editor() {
       }
 
       if (e.key === "Escape") {
-        api.selectElement(null);
-        api.cancelEdit();
+        if (isEditableTarget(e.target)) return;
+        // Primeiro Escape encerra a edição do texto, o segundo desmarca o elemento.
+        if (api.editing) api.cancelEdit();
+        else api.selectElement(null);
       }
     };
 

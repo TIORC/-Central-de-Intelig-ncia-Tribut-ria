@@ -3,12 +3,15 @@ import {
   footer,
   header,
   makeCard,
+  makeChart,
+  makeChartCard,
+  makeChartCardItem,
   makeShape,
   makeStat,
   makeText,
   uid,
 } from "@/data/slide-templates";
-import type { Presentation, Slide, SlideElement } from "@/types/presentation";
+import type { ChartElement, Presentation, Slide, SlideElement } from "@/types/presentation";
 import { SLIDE_HEIGHT, SLIDE_WIDTH } from "@/types/presentation";
 import { brl, compactBrl, joinMonths, percent, periodRange, shortLabel } from "./format";
 import type { PlanejamentoData, RegimeData } from "./planejamento";
@@ -351,54 +354,70 @@ function simplesSlide(
 }
 
 function comparativoSlide(data: PlanejamentoData): Slide {
-  const regimes = data.regimes.slice(0, 4);
-  const stats = slots(regimes.length || 1, { x: 64, y: 344, w: 1152, h: 176 }, regimes.length > 3 ? 4 : 3).map(
-    (slot, i) => {
-      const regime = regimes[i];
-      return makeStat({
-        ...slot,
-        value: brl(regime?.total ?? 0),
-        label: regime?.nome ?? "Sem dados",
-        valueSize: slot.w < 320 ? 24 : 30,
-        labelSize: 14,
-        zIndex: 1,
-      });
-    },
-  );
-
+  const regimes = data.regimes;
   const melhor = data.melhorRegime;
-  const pior = [...data.regimes].sort((a, b) => b.total - a.total)[0] ?? null;
+  const pior = [...regimes].sort((a, b) => b.total - a.total)[0] ?? null;
   const economia = melhor && pior ? pior.total - melhor.total : 0;
 
-  const texto = melhor
-    ? melhor.total > 0
-      ? `Melhor cenário: ${melhor.nome} com ${brl(melhor.total)} (${percent(melhor.percentualMedio)} da receita).${economia > 0 && pior ? ` Economia de ${brl(economia)} frente a ${pior.nome}.` : ""}`
-      : "Nenhum regime apresentou tributo a recolher no período analisado."
-    : "A planilha não permitiu comparar os regimes.";
+  const chart = makeChart({
+    x: 64,
+    y: 342,
+    w: 800,
+    h: 292,
+    chartKind: "column",
+    title: "Tributação mensal por regime (R$)",
+    yAxisTitle: "Tributos por mês (R$)",
+    categories: [...data.periodos],
+    series: regimes.map((regime, index) => ({
+      id: uid("serie"),
+      name: regime.nome,
+      color: ["#3B82F6", "#FF7F0E", "#22C55E"][index % 3] ?? "#3B82F6",
+      values: data.periodos.map((_, monthIndex) => regime.mensal[monthIndex] ?? 0),
+    })),
+    showLegend: true,
+    showGrid: false,
+  });
+
+  const differenceItems = data.periodos.map((period, index) =>
+    makeChartCardItem({
+      label: period,
+      value: brl((pior?.mensal[index] ?? 0) - (melhor?.mensal[index] ?? 0)),
+      color: "#22C55E",
+    }),
+  );
+  differenceItems.push(
+    makeChartCardItem({
+      label: "Total",
+      value: brl(economia),
+      emphasis: true,
+      color: "#22C55E",
+    }),
+  );
+  const differenceCard = makeChartCard({
+    x: 890,
+    y: 342,
+    w: 326,
+    h: 292,
+    title: "Diferença por mês",
+    items: differenceItems,
+    padding: 16,
+    labelSize: 11,
+    valueSize: 12,
+    totalSize: 14,
+  });
 
   return slide("Comparativo de regimes", PALETTE.primary, [
     ...header("Comparativo de regimes"),
-    subheader("Carga tributária total por regime e recomendação preliminar."),
-    ...stats,
-    makeCard({
-      x: 64,
-      y: 542,
-      w: 1152,
-      h: 94,
-      title: "Recomendação preliminar",
-      titleSize: 15,
-      bodySize: 14,
-      titleColor: PALETTE.gold,
-      body: texto,
-      background: "rgba(184,138,26,0.16)",
-      padding: 20,
-      radius: 14,
-      zIndex: 1,
-    }),
+    subheader(
+      melhor && pior
+        ? `Comparação mensal entre ${melhor.nome} e ${pior.nome}, com dados extraídos da planilha.`
+        : "Valores mensais extraídos da planilha importada.",
+    ),
+    chart,
+    differenceCard,
     ...footer("08"),
   ]);
 }
-
 function economiaSlide(data: PlanejamentoData): Slide {
   const melhor = data.melhorRegime;
   const pior = [...data.regimes].sort((a, b) => b.total - a.total)[0] ?? null;
@@ -584,7 +603,7 @@ function genericCapa(model: DocModel): Slide {
       h: 40,
       text:
         model.subtitle ??
-        "Documento convertido em apresentação pela Central de Inteligência Tributária.",
+        "Documento convertido em apresentação pela Central de Planejamento Tributário.",
       fontSize: 18,
       fontWeight: 400,
       color: "rgba(255,255,255,0.78)",

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { Trash2 } from "lucide-react";
 
-import { SlideElementView, getDefaultEditTarget } from "@/components/editor/SlideElementView";
+import { SlideElementView } from "@/components/editor/SlideElementView";
 import { moveSnap, resizeSnap, elRect, type Rect } from "@/components/editor/snap";
 import type { Guide } from "@/components/editor/snap";
 import type { EditorApi } from "@/hooks/use-presentation";
-import type { Slide, SlideBackground, SlideElement } from "@/types/presentation";
+import type { ElementTextField, Slide, SlideBackground, SlideElement } from "@/types/presentation";
 import { SLIDE_HEIGHT, SLIDE_WIDTH } from "@/types/presentation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 type ResizeDir = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
@@ -21,6 +21,7 @@ type DragState =
       startY: number;
       start: Rect;
       moved: boolean;
+      field: ElementTextField | null;
     }
   | {
       mode: "resize";
@@ -71,8 +72,15 @@ const HANDLES: { dir: ResizeDir; cls: string; cursor: string }[] = [
   { dir: "w", cls: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2", cursor: "cursor-ew-resize" },
 ];
 
-const TOOLBAR_WIDTH = 240;
-const TOOLBAR_HEIGHT = 40;
+const DELETE_BUTTON_SIZE = 26;
+const DELETE_BUTTON_GAP = 4;
+
+/** Descobre qual campo de texto foi clicado a partir do marcador `data-field`. */
+function fieldFromTarget(target: EventTarget | null): ElementTextField | null {
+  const node = (target as HTMLElement | null)?.closest?.("[data-field]") as HTMLElement | null;
+  const field = node?.dataset["field"] as ElementTextField | undefined;
+  return field ?? null;
+}
 
 function backgroundStyle(bg: SlideBackground): CSSProperties {
   if (bg.type === "gradient") {
@@ -88,12 +96,39 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
   const apiRef = useRef(api);
   const zoomRef = useRef(zoom);
   const dragRef = useRef<DragState | null>(null);
+  const editTimerRef = useRef<number | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
 
   slideRef.current = slide;
   elementsRef.current = slide.elements;
   apiRef.current = api;
   zoomRef.current = zoom;
+
+  const clearScheduledEdit = useCallback(() => {
+    if (editTimerRef.current !== null) {
+      window.clearTimeout(editTimerRef.current);
+      editTimerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Abre a edição do texto só no próximo tick, quando o gesto de ponteiro já
+   * terminou. Fazer isso durante o gesto corre contra o foco padrão do
+   * navegador (o clique rouba o foco e o editor fecha na hora).
+   */
+  const scheduleEdit = useCallback(
+    (id: string, field: ElementTextField) => {
+      clearScheduledEdit();
+      editTimerRef.current = window.setTimeout(() => {
+        editTimerRef.current = null;
+        const current = apiRef.current;
+        if (current.editing) return;
+        if (current.selectedElementId !== id) return;
+        current.startEdit({ id, field });
+      }, 0);
+    },
+    [clearScheduledEdit],
+  );
 
   const getPos = useCallback((e: Pick<PointerEvent, "clientX" | "clientY">) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -118,7 +153,16 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
       const start = { x: element.x, y: element.y, w: element.w, h: element.h };
       dragRef.current =
         mode === "move"
-          ? { mode, id, pointerId: e.pointerId, startX: p.x, startY: p.y, start, moved: false }
+          ? {
+              mode,
+              id,
+              pointerId: e.pointerId,
+              startX: p.x,
+              startY: p.y,
+              start,
+              moved: false,
+              field: fieldFromTarget(e.target),
+            }
           : {
               mode,
               dir: dir as ResizeDir,
@@ -139,25 +183,33 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
     [getPos],
   );
 
-  const endDrag = useCallback((e?: Pick<PointerEvent, "currentTarget" | "pointerId">) => {
-    const d = dragRef.current;
-    if (!d) return;
+  const endDrag = useCallback(
+    (e?: Pick<PointerEvent, "currentTarget" | "pointerId">, canEdit = false) => {
+      const d = dragRef.current;
+      if (!d) return;
 
-    dragRef.current = null;
-    if (d.moved) apiRef.current.commitTransaction();
-    else apiRef.current.cancelTransaction();
-
-    setGuides([]);
-
-    const target = e?.currentTarget as Element | null;
-    if (target) {
-      try {
-        target.releasePointerCapture(d.pointerId);
-      } catch {
-        // elemento já liberado ou navegador sem suporte
+      dragRef.current = null;
+      if (d.moved) {
+        apiRef.current.commitTransaction();
+      } else {
+        apiRef.current.cancelTransaction();
+        // Clique (sem arrasto) sobre um campo de texto entra direto na edição.
+        if (canEdit && d.mode === "move" && d.field) scheduleEdit(d.id, d.field);
       }
-    }
-  }, []);
+
+      setGuides([]);
+
+      const target = e?.currentTarget as Element | null;
+      if (target) {
+        try {
+          target.releasePointerCapture(d.pointerId);
+        } catch {
+          // elemento já liberado ou navegador sem suporte
+        }
+      }
+    },
+    [scheduleEdit],
+  );
 
   const handleMove = useCallback(
     (e: PointerEvent) => {
@@ -200,6 +252,17 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
     (e: PointerEvent) => {
       const d = dragRef.current;
       if (!d || e.pointerId !== d.pointerId) return;
+      endDrag(e, true);
+    },
+    [endDrag],
+  );
+
+  // pointercancel chega quando o navegador interrompe o gesto (toque, rolagem,
+  // captura de ponteiro): não pode abrir a edição de texto.
+  const handleCancel = useCallback(
+    (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
       endDrag(e);
     },
     [endDrag],
@@ -208,19 +271,29 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
   useEffect(() => {
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp);
-    window.addEventListener("pointercancel", handleUp);
+    window.addEventListener("pointercancel", handleCancel);
     return () => {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
-      window.removeEventListener("pointercancel", handleUp);
+      window.removeEventListener("pointercancel", handleCancel);
+      clearScheduledEdit();
+      dragRef.current = null;
       endDrag();
     };
-  }, [endDrag, handleMove, handleUp]);
+  }, [clearScheduledEdit, endDrag, handleCancel, handleMove, handleUp]);
 
   const onElementPointerDown = (e: React.PointerEvent, id: string) => {
-    if (api.editing) {
-      e.stopPropagation();
-      return;
+    clearScheduledEdit();
+    const editing = api.editing;
+    if (editing) {
+      // Clique no mesmo campo em edição: mantém o cursor onde está.
+      if (editing.id === id && fieldFromTarget(e.target) === editing.field) {
+        e.stopPropagation();
+        return;
+      }
+      // Clique em outro campo ou elemento: fecha a edição atual (o texto é
+      // confirmado na desmontagem) e segue para o novo alvo.
+      api.cancelEdit();
     }
     beginDrag(e, id, "move");
   };
@@ -230,50 +303,19 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
   };
 
   const ordered = [...slide.elements].sort((a, b) => a.zIndex - b.zIndex);
-  const selectedElement = slide.elements.find((el) => el.id === api.selectedElementId) ?? null;
-  const selectedEditTarget = selectedElement ? getDefaultEditTarget(selectedElement) : null;
 
-  const startSelectedEdit = () => {
-    if (selectedEditTarget) api.startEdit(selectedEditTarget);
+  // O botão de excluir acompanha o zoom para ter sempre o mesmo tamanho na tela.
+  const deleteSize = DELETE_BUTTON_SIZE / zoom;
+  const deleteIconSize = (DELETE_BUTTON_SIZE * 0.55) / zoom;
+  const deleteGap = DELETE_BUTTON_GAP / zoom;
+
+  const deleteButtonPosition = (el: SlideElement): CSSProperties => {
+    const fitsAbove = el.y >= deleteSize + deleteGap;
+    const fitsBelow = el.y + el.h + deleteSize + deleteGap <= SLIDE_HEIGHT;
+    if (fitsAbove) return { top: -(deleteSize + deleteGap), right: 0 };
+    if (fitsBelow) return { top: el.h + deleteGap, right: 0 };
+    return { top: 0, right: deleteSize * 0.9 };
   };
-
-  const clearSelectedText = () => {
-    if (!selectedElement) return;
-    const patch: Partial<SlideElement> =
-      selectedElement.type === "text"
-        ? { text: "" }
-        : selectedElement.type === "card"
-          ? { title: "", body: "" }
-          : selectedElement.type === "stat"
-            ? { value: "", label: "" }
-            : {};
-    if (Object.keys(patch).length > 0) {
-      api.updateElement(selectedElement.id, patch, true);
-      api.cancelEdit();
-    }
-  };
-
-  const deleteSelectedElement = () => {
-    if (selectedElement) api.deleteElement(selectedElement.id);
-  };
-
-  const toolbarWidth = 240;
-  const toolbarHeight = 40;
-  const toolbarLeft = Math.min(
-    Math.max((selectedElement?.x ?? 0) * zoom, 0),
-    Math.max(0, SLIDE_WIDTH * zoom - toolbarWidth),
-  );
-  const toolbarTop = selectedElement
-    ? Math.min(
-        Math.max(
-          selectedElement.y * zoom > toolbarHeight + 8
-            ? selectedElement.y * zoom - toolbarHeight - 8
-            : selectedElement.y * zoom + selectedElement.h * zoom + 8,
-          0,
-        ),
-        Math.max(0, SLIDE_HEIGHT * zoom - toolbarHeight),
-      )
-    : 0;
 
   return (
     <div
@@ -375,28 +417,28 @@ export function SlideCanvas({ slide, zoom, api, showGrid = true }: SlideCanvasPr
                   ))}
                 </>
               )}
-        {selectedElement && !api.editing && (
-          <div
-            className="absolute z-[1100] flex items-center gap-1 rounded-md border border-border bg-background p-1 shadow-panel"
-            style={{ left: toolbarLeft, top: toolbarTop, width: toolbarWidth }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {selectedEditTarget && (
-              <Button type="button" size="sm" onClick={startSelectedEdit}>
-                Editar texto
-              </Button>
-            )}
-            {selectedEditTarget && (
-              <Button type="button" size="sm" variant="outline" onClick={clearSelectedText}>
-                Limpar texto
-              </Button>
-            )}
-            <Button type="button" size="sm" variant="outline" onClick={deleteSelectedElement}>
-              Excluir
-            </Button>
-          </div>
-        )}
-      </div>
+
+              {selected && !api.editing && (
+                <button
+                  type="button"
+                  title="Excluir elemento"
+                  aria-label="Excluir elemento"
+                  className="absolute z-[1100] flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-panel transition-colors hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  style={{
+                    ...deleteButtonPosition(el),
+                    width: deleteSize,
+                    height: deleteSize,
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    api.deleteElement(el.id);
+                  }}
+                >
+                  <Trash2 style={{ width: deleteIconSize, height: deleteIconSize }} />
+                </button>
+              )}
+            </div>
           );
         })}
       </div>

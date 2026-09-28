@@ -17,7 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { clients, presentationTypes } from "@/data/mock";
+import { presentationTypes } from "@/data/mock";
+import { useClients } from "@/hooks/use-clients";
 import { importPresentation } from "@/lib/importers";
 import { createLibraryItem } from "@/lib/library-store";
 import { newPresentation } from "@/lib/presentation-factory";
@@ -27,12 +28,12 @@ import type { Presentation } from "@/types/presentation";
 export const Route = createFileRoute("/nova-apresentacao")({
   head: () => ({
     meta: [
-      { title: "Nova apresentação — Central de Inteligência Tributária" },
+      { title: "Nova apresentação — Central de Planejamento Tributário" },
       {
         name: "description",
         content: "Cadastre os dados iniciais de uma nova apresentação para o cliente.",
       },
-      { property: "og:title", content: "Nova apresentação — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Nova apresentação — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Cadastre os dados iniciais de uma nova apresentação.",
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/nova-apresentacao")({
 
 function NewPresentation() {
   const navigate = useNavigate();
+  const { data: clients = [] } = useClients();
   const [name, setName] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [tipo, setTipo] = useState("");
@@ -77,7 +79,10 @@ function NewPresentation() {
 
       const item = createLibraryItem({
         name: nome,
-        client: clients.find((c) => c.id === clienteId)?.name ?? "Não informado",
+        client: (() => {
+          const selected = clients.find((c) => c.id === clienteId);
+          return selected ? selected.name || selected.legalName : "Não informado";
+        })(),
         type: tipo || "Planejamento",
         status: "Rascunho",
         dateISO: dataISO || todayISO(),
@@ -86,16 +91,13 @@ function NewPresentation() {
         ...(descricao.trim() ? { description: descricao.trim() } : {}),
       });
 
-      toast.success(
-        file ? `${presentation.slides.length} slides gerados` : "Apresentação criada",
-        {
-          description:
-            warning ??
-            (file
-              ? `${item.name} está na lista de apresentações. Abrindo o editor…`
-              : `${item.name} já aparece na lista de apresentações.`),
-        },
-      );
+      toast.success(file ? `${presentation.slides.length} slides gerados` : "Apresentação criada", {
+        description:
+          warning ??
+          (file
+            ? `${item.name} está na lista de apresentações. Abrindo o editor…`
+            : `${item.name} já aparece na lista de apresentações.`),
+      });
 
       await (file
         ? navigate({ to: "/editor", search: { id: item.id } })
@@ -142,7 +144,7 @@ function NewPresentation() {
               <SelectContent>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.name}
+                    {c.name || c.legalName}
                   </SelectItem>
                 ))}
               </SelectContent>

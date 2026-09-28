@@ -10,9 +10,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Bell,
+  LogOut,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -28,6 +32,16 @@ const navItems = [
 export function AppLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Não foi possível sair da conta.");
+      return;
+    }
+    await navigate({ to: "/login", replace: true });
+  };
 
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
@@ -38,14 +52,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
         )}
       >
         <div className="flex h-16 items-center gap-3 px-5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent font-display text-sm font-semibold text-accent-foreground">
-            CIT
-          </span>
+          <img
+            src="/center.png"
+            alt="Central de Planejamento Tributário"
+            className="size-9 shrink-0 rounded-md bg-white object-contain"
+          />
           {!collapsed && (
             <span className="font-display text-sm leading-tight font-semibold">
               Central de
               <br />
-              Inteligência Tributária
+              Planejamento Tributário
             </span>
           )}
         </div>
@@ -88,12 +104,30 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </>
           )}
         </button>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          title="Sair"
+          className="m-3 mt-0 flex items-center gap-3 rounded-md border border-red-500/25 bg-red-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
+        >
+          <LogOut className="size-[18px] shrink-0" />
+          {!collapsed && <span>Sair</span>}
+        </button>
       </aside>
+
+      <button
+        type="button"
+        onClick={handleSignOut}
+        className="fixed bottom-4 left-4 z-30 inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg hover:bg-red-700 md:hidden"
+      >
+        <LogOut className="size-4" />
+        Sair
+      </button>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-background/90 px-5 backdrop-blur md:px-8">
           <h1 className="font-display text-base font-semibold tracking-tight md:text-lg">
-            Central de Inteligência Tributária
+            Central de Planejamento Tributário
           </h1>
           <div className="ml-auto flex items-center gap-3">
             <button className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">

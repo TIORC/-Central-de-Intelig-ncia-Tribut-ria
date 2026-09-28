@@ -6,12 +6,14 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { supabase } from "@/integrations/supabase/client";
 
 
 function NotFoundComponent() {
@@ -79,16 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Central de Inteligência Tributária" },
+      { title: "Central de Planejamento Tributário" },
       {
         name: "description",
         content:
-          "Plataforma corporativa para criação de apresentações tributárias, financeiras e empresariais.",
+          "Central de Planejamento Tributário para criação e gestão de apresentações.",
       },
-      { property: "og:title", content: "Central de Inteligência Tributária" },
+      { property: "og:title", content: "Central de Planejamento Tributário" },
       {
         property: "og:description",
-        content: "Plataforma corporativa para apresentações tributárias profissionais.",
+        content: "Plataforma para planejamento tributário e apresentações profissionais.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -116,7 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
@@ -130,11 +132,49 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    let active = true;
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setHasSession(Boolean(session));
+    });
+    void supabase.auth.getSession().then(({ data: sessionData }) => {
+      if (active) setHasSession(Boolean(sessionData.session));
+    }).catch(() => {
+      if (active) setHasSession(false);
+    });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasSession === null) return;
+    if (pathname === "/login" && hasSession) {
+      void router.navigate({ to: "/" });
+    } else if (pathname !== "/login" && !hasSession) {
+      void router.navigate({ to: "/login", replace: true });
+    }
+  }, [hasSession, pathname, router]);
+
+  const publicRoute = pathname === "/login";
+  const protectedContentReady = hasSession === true;
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {publicRoute || protectedContentReady ? (
+        <Outlet />
+      ) : (
+        <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+          Verificando sessão…
+        </div>
+      )}
       <Toaster />
     </QueryClientProvider>
   );

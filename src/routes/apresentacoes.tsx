@@ -1,22 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarDays, Plus, Presentation } from "lucide-react";
+import { CalendarDays, Plus, Presentation, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DeletePresentationDialog } from "@/components/library/DeletePresentationDialog";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { useLibrary } from "@/hooks/use-library";
+import type { LibraryItem } from "@/types/library";
 import { formatLibraryDate } from "@/types/library";
 
 export const Route = createFileRoute("/apresentacoes")({
   head: () => ({
     meta: [
-      { title: "Apresentações — Central de Inteligência Tributária" },
+      { title: "Apresentações — Central de Planejamento Tributário" },
       {
         name: "description",
         content: "Acompanhe todas as apresentações tributárias por cliente, data e status.",
       },
-      { property: "og:title", content: "Apresentações — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Apresentações — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Acompanhe apresentações por cliente, data e status.",
@@ -47,6 +50,7 @@ function EmptyState() {
 
 function Presentations() {
   const items = useLibrary();
+  const [deletingItem, setDeletingItem] = useState<LibraryItem | null>(null);
 
   return (
     <AppLayout>
@@ -87,19 +91,40 @@ function Presentations() {
                   <CalendarDays className="size-4" />
                   {formatLibraryDate(item.dateISO)}
                 </div>
-                <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
+                <div className="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
                   <StatusBadge status={item.status} />
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/editor" search={{ id: item.id }}>
-                      Abrir editor
-                    </Link>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-destructive"
+                      title="Excluir apresentação"
+                      aria-label={`Excluir ${item.name}`}
+                      onClick={() => setDeletingItem(item)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to="/editor" search={{ id: item.id }}>
+                        Abrir editor
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </article>
           ))}
         </div>
       )}
+
+      <DeletePresentationDialog
+        open={deletingItem !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeletingItem(null);
+        }}
+        item={deletingItem}
+      />
     </AppLayout>
   );
 }

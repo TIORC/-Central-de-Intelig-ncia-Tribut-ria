@@ -9,12 +9,12 @@ import { documents } from "@/data/mock";
 export const Route = createFileRoute("/documentos")({
   head: () => ({
     meta: [
-      { title: "Documentos — Central de Inteligência Tributária" },
+      { title: "Documentos — Central de Planejamento Tributário" },
       {
         name: "description",
         content: "Documentos e planilhas vinculados a cada cliente da consultoria tributária.",
       },
-      { property: "og:title", content: "Documentos — Central de Inteligência Tributária" },
+      { property: "og:title", content: "Documentos — Central de Planejamento Tributário" },
       {
         property: "og:description",
         content: "Documentos e planilhas vinculados a cada cliente.",
